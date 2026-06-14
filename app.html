@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pokémon Team Builder – McKay Tuttle</title>
+
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Palette ── */
+    :root {
+      --bg:       #0f172a;
+      --card:     #1e293b;
+      --border:   #334155;
+      --yellow:   #facc15;
+      --red:      #ef4444;
+      --blue:     #60a5fa;
+      --green:    #4ade80;
+      --text:     #e2e8f0;
+      --muted:    #94a3b8;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #0a1120;
+      border-bottom: 2px solid var(--yellow);
+      padding: 0 1.5rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .topbar .brand {
+      font-family: Impact, Arial Black, sans-serif;
+      font-size: 1.15rem;
+      color: var(--yellow);
+      letter-spacing: 1px;
+    }
+    .topbar a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .85rem;
+    }
+    .topbar a:hover { color: var(--text); }
+
+    /* ── Layout ── */
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .page-title {
+      font-family: Impact, Arial Black, sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      color: var(--yellow);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: .5rem;
+    }
+    .page-sub {
+      text-align: center;
+      color: var(--muted);
+      font-size: .95rem;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── Type grid ── */
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: .6rem;
+      margin-bottom: 2rem;
+    }
+
+    .type-btn {
+      padding: .6rem .5rem;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: #fff;
+      transition: transform .15s, border-color .15s, box-shadow .15s;
+      text-align: center;
+    }
+    .type-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+    .type-btn.active { border-color: var(--yellow); box-shadow: 0 0 12px rgba(250,204,21,.5); }
+
+    .type-fire     { background: #b94a2a; }
+    .type-water    { background: #1565c0; }
+    .type-grass    { background: #2e7d32; }
+    .type-electric { background: #e6a700; color: #000; }
+    .type-psychic  { background: #ad1457; }
+    .type-dark     { background: #37306b; }
+    .type-dragon   { background: #4527a0; }
+    .type-ice      { background: #0097a7; }
+    .type-ghost    { background: #5e35b1; }
+    .type-steel    { background: #546e7a; }
+
+    /* ── Result area ── */
+    #result {
+      display: none;
+      animation: fadeUp .35s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Pokémon card ── */
+    .poke-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .poke-header {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .poke-sprite {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,.5));
+    }
+
+    .poke-info .poke-number {
+      font-size: .75rem;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .poke-info .poke-name {
+      font-family: Impact, Arial Black, sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+      line-height: 1;
+      margin: .15rem 0;
+    }
+    .poke-type-row { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .4rem; }
+    .poke-type-pill {
+      padding: .2rem .65rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    /* ── Stat bars ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: .75rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-row { }
+    .stat-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: .75rem;
+      font-weight: 600;
+      margin-bottom: .3rem;
+    }
+    .stat-label { color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .stat-val { color: var(--text); }
+    .stat-bar-bg {
+      height: 6px;
+      background: rgba(255,255,255,.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width .6s ease;
+    }
+
+    /* ── Moveset ── */
+    .moveset-title {
+      padding: 1rem 1.5rem .5rem;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .moves-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+      padding: .5rem 1.5rem 1.5rem;
+    }
+
+    .move-card {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: .9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+    }
+    .move-name { font-weight: 700; font-size: .95rem; color: var(--text); }
+    .move-meta { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    .move-type-badge {
+      padding: .15rem .6rem;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .move-power { font-size: .78rem; color: var(--yellow); font-weight: 600; }
+    .move-cat   { font-size: .72rem; color: var(--muted); }
+
+    /* ── Reroll button ── */
+    .reroll-row {
+      display: flex;
+      justify-content: center;
+      padding: 1.5rem 1.5rem .5rem;
+    }
+    .reroll-btn {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .7rem 2rem;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .reroll-btn:hover { background: #dc2626; transform: scale(1.03); }
+
+    /* ── Prompt ── */
+    .prompt-card {
+      background: var(--card);
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      padding: 3rem 2rem;
+      text-align: center;
+      color: var(--muted);
+    }
+    .prompt-card .prompt-icon { font-size: 3rem; margin-bottom: .75rem; }
+    .prompt-card p { font-size: 1.05rem; }
+
+    /* ── Footer ── */
+    .app-footer {
+      text-align: center;
+      margin-top: 3rem;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+    .app-footer a { color: var(--blue); text-decoration: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 540px) {
+      .moves-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .poke-sprite { width: 70px; height: 70px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">⚡ PokéTeam Builder</span>
+  <a href="index.html">← Back to Scratch Page</a>
+</div>
+
+<div class="page">
+
+  <h1 class="page-title">⚔️ Pokémon Team Builder</h1>
+  <p class="page-sub">Choose a type and we'll generate a Pokémon and a competitive moveset. Reroll as many times as you want.</p>
+
+  <!-- Type selector -->
+  <div class="type-grid" id="typeGrid">
+    <button class="type-btn type-fire"     onclick="selectType('fire',     this)">🔥 Fire</button>
+    <button class="type-btn type-water"    onclick="selectType('water',    this)">💧 Water</button>
+    <button class="type-btn type-grass"    onclick="selectType('grass',    this)">🌿 Grass</button>
+    <button class="type-btn type-electric" onclick="selectType('electric', this)">⚡ Electric</button>
+    <button class="type-btn type-psychic"  onclick="selectType('psychic',  this)">🔮 Psychic</button>
+    <button class="type-btn type-dark"     onclick="selectType('dark',     this)">🌑 Dark</button>
+    <button class="type-btn type-dragon"   onclick="selectType('dragon',   this)">🐉 Dragon</button>
+    <button class="type-btn type-ice"      onclick="selectType('ice',      this)">🧊 Ice</button>
+    <button class="type-btn type-ghost"    onclick="selectType('ghost',    this)">👻 Ghost</button>
+    <button class="type-btn type-steel"    onclick="selectType('steel',    this)">⚙️ Steel</button>
+  </div>
+
+  <!-- Prompt state -->
+  <div id="promptCard" class="prompt-card">
+    <div class="prompt-icon">🎮</div>
+    <p>Select a type above to generate a Pokémon and moveset.</p>
+  </div>
+
+  <!-- Result -->
+  <div id="result">
+    <div class="poke-card">
+      <div class="poke-header">
+        <img id="pokeSprite" src="" alt="" class="poke-sprite"/>
+        <div class="poke-info">
+          <div class="poke-number" id="pokeNumber">#000</div>
+          <div class="poke-name" id="pokeName">—</div>
+          <div class="poke-type-row" id="pokeTypes"></div>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="moveset-title">Generated Moveset</div>
+      <div class="moves-grid" id="movesGrid"></div>
+
+      <div class="reroll-row">
+        <button class="reroll-btn" id="rerollBtn" onclick="reroll()">🎲 Reroll Moveset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-footer">
+    <p>Built with HTML, CSS &amp; vanilla JavaScript · <a href="index.html">Scratch Page</a>
+    <p style="margin-top:.35rem;">Pokémon data &amp; sprites via <a href="https://pokeapi.co" target="_blank">PokéAPI</a></p>
+  </div>
+
+</div>
+
+<script>
+  // ── Data ────────────────────────────────────────────────────────────────────
+  const typeColors = {
+    fire:'#b94a2a', water:'#1565c0', grass:'#2e7d32',
+    electric:'#e6a700', psychic:'#ad1457', dark:'#37306b',
+    dragon:'#4527a0', ice:'#0097a7', ghost:'#5e35b1',
+    steel:'#546e7a', flying:'#0288d1', fighting:'#c62828',
+    poison:'#7b1fa2', ground:'#6d4c41', rock:'#78909c',
+    bug:'#558b2f', normal:'#757575', fairy:'#e91e8c'
+  };
+
+  const typeData = {
+    fire: {
+      pokemon: [
+        { id: 6,   name: 'Charizard',  types: ['fire','flying'],
+          stats: {hp:78,atk:84,def:78,spa:109,spd:85,spe:100} },
+        { id: 257, name: 'Blaziken',   types: ['fire','fighting'],
+          stats: {hp:80,atk:120,def:70,spa:110,spd:70,spe:80} },
+        { id: 392, name: 'Infernape',  types: ['fire','fighting'],
+          stats: {hp:76,atk:104,def:71,spa:104,spd:71,spe:108} },
+      ],
+      moves: [
+        { name:'Flamethrower',  type:'fire',     power:90,  cat:'Special'  },
+        { name:'Fire Blast',    type:'fire',     power:110, cat:'Special'  },
+        { name:'Overheat',      type:'fire',     power:130, cat:'Special'  },
+        { name:'Heat Wave',     type:'fire',     power:95,  cat:'Special'  },
+        { name:'Fire Spin',     type:'fire',     power:35,  cat:'Special'  },
+        { name:'Dragon Claw',   type:'dragon',   power:80,  cat:'Physical' },
+        { name:'Air Slash',     type:'flying',   power:75,  cat:'Special'  },
+        { name:'Close Combat',  type:'fighting', power:120, cat:'Physical' },
+        { name:'Earthquake',    type:'ground',   power:100, cat:'Physical' },
+        { name:'Thunder Punch', type:'electric', power:75,  cat:'Physical' },
+      ]
+    },
+    water: {
+      pokemon: [
+        { id: 9,   name: 'Blastoise', types: ['water'],
+          stats: {hp:79,atk:83,def:100,spa:85,spd:105,spe:78} },
+        { id: 260, name: 'Swampert',  types: ['water','ground'],
+          stats: {hp:100,atk:110,def:90,spa:85,spd:90,spe:60} },
+        { id: 503, name: 'Samurott', types: ['water'],
+          stats: {hp:95,atk:100,def:85,spa:108,spd:70,spe:70} },
+      ],
+      moves: [
+        { name:'Hydro Pump',   type:'water',   power:110, cat:'Special'  },
+        { name:'Surf',         type:'water',   power:90,  cat:'Special'  },
+        { name:'Aqua Tail',    type:'water',   power:90,  cat:'Physical' },
+        { name:'Ice Beam',     type:'ice',     power:90,  cat:'Special'  },
+        { name:'Blizzard',     type:'ice',     power:110, cat:'Special'  },
+        { name:'Flash Cannon', type:'steel',   power:80,  cat:'Special'  },
+        { name:'Earthquake',   type:'ground',  power:100, cat:'Physical' },
+        { name:'Scald',        type:'water',   power:80,  cat:'Special'  },
+        { name:'Waterfall',    type:'water',   power:80,  cat:'Physical' },
+        { name:'Megahorn',     type:'bug',     power:120, cat:'Physical' },
+      ]
+    },
+    grass: {
+      pokemon: [
+        { id: 3,   name: 'Venusaur',  types: ['grass','poison'],
+          stats: {hp:80,atk:82,def:83,spa:100,spd:100,spe:80} },
+        { id: 254, name: 'Sceptile',  types: ['grass'],
+          stats: {hp:70,atk:85,def:65,spa:105,spd:85,spe:120} },
+        { id: 389, name: 'Torterra',  types: ['grass','ground'],
+          stats: {hp:95,atk:109,def:105,spa:75,spd:85,spe:56} },
+      ],
+      moves: [
+        { name:'Solar Beam',    type:'grass',   power:120, cat:'Special'  },
+        { name:'Petal Dance',   type:'grass',   power:120, cat:'Special'  },
+        { name:'Leaf Storm',    type:'grass',   power:130, cat:'Special'  },
+        { name:'Power Whip',    type:'grass',   power:120, cat:'Physical' },
+        { name:'Sludge Bomb',   type:'poison',  power:90,  cat:'Special'  },
+        { name:'Earthquake',    type:'ground',  power:100, cat:'Physical' },
+        { name:'Sleep Powder',  type:'grass',   power:0,   cat:'Status'   },
+        { name:'Synthesis',     type:'grass',   power:0,   cat:'Status'   },
+        { name:'Rock Slide',    type:'rock',    power:75,  cat:'Physical' },
+        { name:'Crunch',        type:'dark',    power:80,  cat:'Physical' },
+      ]
+    },
+    electric: {
+      pokemon: [
+        { id: 25,  name: 'Pikachu',   types: ['electric'],
+          stats: {hp:35,atk:55,def:40,spa:50,spd:50,spe:90} },
+        { id: 135, name: 'Jolteon',   types: ['electric'],
+          stats: {hp:65,atk:65,def:60,spa:110,spd:95,spe:130} },
+        { id: 405, name: 'Luxray',    types: ['electric'],
+          stats: {hp:80,atk:120,def:79,spa:95,spd:79,spe:70} },
+      ],
+      moves: [
+        { name:'Thunderbolt',   type:'electric', power:90,  cat:'Special'  },
+        { name:'Thunder',       type:'electric', power:110, cat:'Special'  },
+        { name:'Volt Switch',   type:'electric', power:70,  cat:'Special'  },
+        { name:'Wild Charge',   type:'electric', power:90,  cat:'Physical' },
+        { name:'Discharge',     type:'electric', power:80,  cat:'Special'  },
+        { name:'Quick Attack',  type:'normal',   power:40,  cat:'Physical' },
+        { name:'Iron Tail',     type:'steel',    power:100, cat:'Physical' },
+        { name:'Signal Beam',   type:'bug',      power:75,  cat:'Special'  },
+        { name:'Shadow Ball',   type:'ghost',    power:80,  cat:'Special'  },
+        { name:'Ice Fang',      type:'ice',      power:65,  cat:'Physical' },
+      ]
+    },
+    psychic: {
+      pokemon: [
+        { id: 150, name: 'Mewtwo',    types: ['psychic'],
+          stats: {hp:106,atk:110,def:90,spa:154,spd:90,spe:130} },
+        { id: 282, name: 'Gardevoir', types: ['psychic','fairy'],
+          stats: {hp:68,atk:65,def:65,spa:125,spd:115,spe:80} },
+        { id: 308, name: 'Medicham',  types: ['psychic','fighting'],
+          stats: {hp:60,atk:60,def:75,spa:60,spd:75,spe:80} },
+      ],
+      moves: [
+        { name:'Psychic',      type:'psychic',  power:90,  cat:'Special'  },
+        { name:'Psyshock',     type:'psychic',  power:80,  cat:'Special'  },
+        { name:'Psystrike',    type:'psychic',  power:100, cat:'Special'  },
+        { name:'Shadow Ball',  type:'ghost',    power:80,  cat:'Special'  },
+        { name:'Focus Blast',  type:'fighting', power:120, cat:'Special'  },
+        { name:'Ice Beam',     type:'ice',      power:90,  cat:'Special'  },
+        { name:'Thunderbolt',  type:'electric', power:90,  cat:'Special'  },
+        { name:'Aura Sphere',  type:'fighting', power:80,  cat:'Special'  },
+        { name:'Calm Mind',    type:'psychic',  power:0,   cat:'Status'   },
+        { name:'Recover',      type:'normal',   power:0,   cat:'Status'   },
+      ]
+    },
+    dark: {
+      pokemon: [
+        { id: 197, name: 'Umbreon',   types: ['dark'],
+          stats: {hp:95,atk:65,def:110,spa:60,spd:130,spe:65} },
+        { id: 248, name: 'Tyranitar', types: ['rock','dark'],
+          stats: {hp:100,atk:134,def:110,spa:95,spd:100,spe:61} },
+        { id: 461, name: 'Weavile',   types: ['dark','ice'],
+          stats: {hp:70,atk:120,def:65,spa:45,spd:85,spe:125} },
+      ],
+      moves: [
+        { name:'Dark Pulse',   type:'dark',    power:80,  cat:'Special'  },
+        { name:'Foul Play',    type:'dark',    power:95,  cat:'Physical' },
+        { name:'Crunch',       type:'dark',    power:80,  cat:'Physical' },
+        { name:'Pursuit',      type:'dark',    power:40,  cat:'Physical' },
+        { name:'Night Slash',  type:'dark',    power:70,  cat:'Physical' },
+        { name:'Ice Punch',    type:'ice',     power:75,  cat:'Physical' },
+        { name:'Ice Shard',    type:'ice',     power:40,  cat:'Physical' },
+        { name:'Stone Edge',   type:'rock',    power:100, cat:'Physical' },
+        { name:'Snarl',        type:'dark',    power:55,  cat:'Special'  },
+        { name:'Knock Off',    type:'dark',    power:65,  cat:'Physical' },
+      ]
+    },
+    dragon: {
+      pokemon: [
+        { id: 149, name: 'Dragonite', types: ['dragon','flying'],
+          stats: {hp:91,atk:134,def:95,spa:100,spd:100,spe:80} },
+        { id: 445, name: 'Garchomp',  types: ['dragon','ground'],
+          stats: {hp:108,atk:130,def:95,spa:80,spd:85,spe:102} },
+        { id: 384, name: 'Rayquaza',  types: ['dragon','flying'],
+          stats: {hp:105,atk:150,def:90,spa:150,spd:90,spe:95} },
+      ],
+      moves: [
+        { name:'Outrage',       type:'dragon',  power:120, cat:'Physical' },
+        { name:'Dragon Claw',   type:'dragon',  power:80,  cat:'Physical' },
+        { name:'Draco Meteor',  type:'dragon',  power:130, cat:'Special'  },
+        { name:'Dragon Pulse',  type:'dragon',  power:85,  cat:'Special'  },
+        { name:'Hurricane',     type:'flying',  power:110, cat:'Special'  },
+        { name:'Fire Blast',    type:'fire',    power:110, cat:'Special'  },
+        { name:'Earthquake',    type:'ground',  power:100, cat:'Physical' },
+        { name:'Dragon Dance',  type:'dragon',  power:0,   cat:'Status'   },
+        { name:'ExtremeSpeed',  type:'normal',  power:80,  cat:'Physical' },
+        { name:'Thunder',       type:'electric', power:110, cat:'Special' },
+      ]
+    },
+    ice: {
+      pokemon: [
+        { id: 91,  name: 'Cloyster',   types: ['water','ice'],
+          stats: {hp:50,atk:95,def:180,spa:85,spd:45,spe:70} },
+        { id: 131, name: 'Lapras',     types: ['water','ice'],
+          stats: {hp:130,atk:85,def:80,spa:85,spd:95,spe:60} },
+        { id: 473, name: 'Mamoswine',  types: ['ice','ground'],
+          stats: {hp:110,atk:130,def:80,spa:70,spd:60,spe:80} },
+      ],
+      moves: [
+        { name:'Blizzard',      type:'ice',     power:110, cat:'Special'  },
+        { name:'Ice Beam',      type:'ice',     power:90,  cat:'Special'  },
+        { name:'Icicle Crash',  type:'ice',     power:85,  cat:'Physical' },
+        { name:'Freeze-Dry',    type:'ice',     power:70,  cat:'Special'  },
+        { name:'Ice Shard',     type:'ice',     power:40,  cat:'Physical' },
+        { name:'Earthquake',    type:'ground',  power:100, cat:'Physical' },
+        { name:'Stone Edge',    type:'rock',    power:100, cat:'Physical' },
+        { name:'Surf',          type:'water',   power:90,  cat:'Special'  },
+        { name:'Icicle Spear',  type:'ice',     power:25,  cat:'Physical' },
+        { name:'Amnesia',       type:'psychic', power:0,   cat:'Status'   },
+      ]
+    },
+    ghost: {
+      pokemon: [
+        { id: 94,  name: 'Gengar',     types: ['ghost','poison'],
+          stats: {hp:60,atk:65,def:60,spa:130,spd:75,spe:110} },
+        { id: 487, name: 'Giratina',   types: ['ghost','dragon'],
+          stats: {hp:150,atk:100,def:120,spa:100,spd:120,spe:90} },
+        { id: 479, name: 'Rotom',      types: ['electric','ghost'],
+          stats: {hp:50,atk:50,def:77,spa:95,spd:77,spe:91} },
+      ],
+      moves: [
+        { name:'Shadow Ball',   type:'ghost',   power:80,  cat:'Special'  },
+        { name:'Shadow Claw',   type:'ghost',   power:70,  cat:'Physical' },
+        { name:'Hex',           type:'ghost',   power:65,  cat:'Special'  },
+        { name:'Sludge Wave',   type:'poison',  power:95,  cat:'Special'  },
+        { name:'Thunderbolt',   type:'electric', power:90, cat:'Special'  },
+        { name:'Focus Blast',   type:'fighting', power:120, cat:'Special' },
+        { name:'Dark Pulse',    type:'dark',    power:80,  cat:'Special'  },
+        { name:'Trick',         type:'psychic', power:0,   cat:'Status'   },
+        { name:'Will-O-Wisp',   type:'fire',    power:0,   cat:'Status'   },
+        { name:'Energy Ball',   type:'grass',   power:90,  cat:'Special'  },
+      ]
+    },
+    steel: {
+      pokemon: [
+        { id: 376, name: 'Metagross',  types: ['steel','psychic'],
+          stats: {hp:80,atk:135,def:130,spa:95,spd:90,spe:70} },
+        { id: 212, name: 'Scizor',     types: ['bug','steel'],
+          stats: {hp:70,atk:130,def:100,spa:55,spd:80,spe:65} },
+        { id: 530, name: 'Excadrill',  types: ['ground','steel'],
+          stats: {hp:110,atk:135,def:60,spa:50,spd:65,spe:88} },
+      ],
+      moves: [
+        { name:'Meteor Mash',   type:'steel',   power:90,  cat:'Physical' },
+        { name:'Iron Head',     type:'steel',   power:80,  cat:'Physical' },
+        { name:'Flash Cannon',  type:'steel',   power:80,  cat:'Special'  },
+        { name:'Earthquake',    type:'ground',  power:100, cat:'Physical' },
+        { name:'Bullet Punch',  type:'steel',   power:40,  cat:'Physical' },
+        { name:'X-Scissor',     type:'bug',     power:80,  cat:'Physical' },
+        { name:'Zen Headbutt',  type:'psychic', power:80,  cat:'Physical' },
+        { name:'Ice Punch',     type:'ice',     power:75,  cat:'Physical' },
+        { name:'Swords Dance',  type:'normal',  power:0,   cat:'Status'   },
+        { name:'Stealth Rock',  type:'rock',    power:0,   cat:'Status'   },
+      ]
+    }
+  };
+
+  const statLabels = { hp:'HP', atk:'Attack', def:'Defense', spa:'Sp. Atk', spd:'Sp. Def', spe:'Speed' };
+  const statColors  = { hp:'#ef4444', atk:'#f97316', def:'#facc15', spa:'#60a5fa', spd:'#34d399', spe:'#c084fc' };
+  const statMax     = { hp:255, atk:190, def:250, spa:194, spd:250, spe:200 };
+
+  let currentType = null;
+  let currentPoke = null;
+
+  function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+
+  function selectType(type, btn) {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentType = type;
+    currentPoke = rand(typeData[type].pokemon);
+    generate();
+  }
+
+  function reroll() {
+    if (!currentType) return;
+    generate();
+  }
+
+  function generate() {
+    const td   = typeData[currentType];
+    const poke = currentPoke;
+    const moves = shuffle(td.moves).slice(0, 4);
+
+    // Sprite
+    document.getElementById('pokeSprite').src =
+      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${poke.id}.png`;
+    document.getElementById('pokeSprite').alt = poke.name;
+    document.getElementById('pokeNumber').textContent = `#${String(poke.id).padStart(3,'0')}`;
+    document.getElementById('pokeName').textContent   = poke.name;
+
+    // Types
+    const typesEl = document.getElementById('pokeTypes');
+    typesEl.innerHTML = poke.types.map(t =>
+      `<span class="poke-type-pill" style="background:${typeColors[t] || '#555'}">${t}</span>`
+    ).join('');
+
+    // Stats
+    const sg = document.getElementById('statsGrid');
+    sg.innerHTML = Object.entries(poke.stats).map(([k, v]) => `
+      <div class="stat-row">
+        <div class="stat-label-row">
+          <span class="stat-label">${statLabels[k]}</span>
+          <span class="stat-val">${v}</span>
+        </div>
+        <div class="stat-bar-bg">
+          <div class="stat-bar-fill" style="width:${(v/statMax[k])*100}%; background:${statColors[k]}"></div>
+        </div>
+      </div>
+    `).join('');
+
+    // Moves
+    const mg = document.getElementById('movesGrid');
+    mg.innerHTML = moves.map(m => `
+      <div class="move-card">
+        <div class="move-name">${m.name}</div>
+        <div class="move-meta">
+          <span class="move-type-badge" style="background:${typeColors[m.type] || '#555'}">${m.type}</span>
+          <span class="move-power">${m.power > 0 ? m.power + ' PWR' : 'Status'}</span>
+          <span class="move-cat">${m.cat}</span>
+        </div>
+      </div>
+    `).join('');
+
+    // Show result
+    document.getElementById('promptCard').style.display = 'none';
+    const result = document.getElementById('result');
+    result.style.display = 'block';
+    result.style.animation = 'none';
+    result.offsetHeight; // reflow
+    result.style.animation = 'fadeUp .35s ease';
+  }
+</script>
+
+</body>
+</html>
